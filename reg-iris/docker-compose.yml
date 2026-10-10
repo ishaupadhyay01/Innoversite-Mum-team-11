@@ -1,0 +1,179 @@
+# Reg IRIS — full stack.   docker compose up --build        (UI + API gateway → http://localhost:8080)
+# Optional semantic search: docker compose --profile semantic up --build   (and ENABLE_SEMANTIC=true in .env)
+name: reg-iris
+
+x-python-env: &python-env
+  ENVIRONMENT: ${ENVIRONMENT:-local}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  LOG_JSON: "true"
+  REDIS_URL: redis://redis:6379/0
+  API_TOKEN: ${API_TOKEN:-}
+  CORS_ORIGINS: '["http://localhost:8080","http://localhost:5173"]'
+  MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-50}
+
+x-healthy: &healthy
+  condition: service_healthy
+
+services:
+  # ───────────────────────────── data stores ─────────────────────────────
+  postgres:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-iris}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-iris}
+      POSTGRES_DB: postgres
+      IRIS_DATABASES: iris_ingestion iris_search iris_rules   # database-per-service
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    ports: ["127.0.0.1:5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d iris_rules"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redisdata:/data]
+    ports: ["127.0.0.1:6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"      # local only — enable security + TLS outside local
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      cluster.routing.allocation.disk.threshold_enabled: "false"
+    volumes: [esdata:/usr/share/elasticsearch/data]
+    ports: ["127.0.0.1:9200:9200"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=2s' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  chromadb:
+    profiles: ["semantic"]
+    image: chromadb/chroma:0.5.23
+    environment:
+      IS_PERSISTENT: "TRUE"
+      ANONYMIZED_TELEMETRY: "FALSE"
+    volumes: [chromadata:/chroma/chroma]
+    ports: ["127.0.0.1:8010:8000"]
+
+  # ───────────────────── Module 1: ingestion & versioning ─────────────────
+  ingestion-api:
+    build: &ingestion-build
+      context: .
+      dockerfile: services/ingestion-service/Dockerfile
+    image: reg-iris/ingestion-service:${IMAGE_TAG:-local}
+    command: ["api"]
+    environment: &ingestion-env
+      <<: *python-env
+      SERVICE_NAME: ingestion-service
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-iris}:${POSTGRES_PASSWORD:-iris}@postgres:5432/iris_ingestion
+      STORAGE_DIR: /data/regulations
+    volumes: [regulations:/data/regulations]
+    ports: ["127.0.0.1:8001:8000"]
+    depends_on: {postgres: *healthy, redis: *healthy}
+
+  ingestion-worker:
+    build: *ingestion-build
+    image: reg-iris/ingestion-service:${IMAGE_TAG:-local}
+    command: ["worker"]
+    environment: *ingestion-env
+    volumes: [regulations:/data/regulations]
+    healthcheck: {disable: true}
+    depends_on: {ingestion-api: *healthy}
+
+  # ───────────────────── Module 2: search & comparison ────────────────────
+  search-api:
+    build: &search-build
+      context: .
+      dockerfile: services/search-service/Dockerfile
+      args:
+        WITH_SEMANTIC: ${ENABLE_SEMANTIC:-false}
+    image: reg-iris/search-service:${IMAGE_TAG:-local}
+    command: ["api"]
+    environment: &search-env
+      <<: *python-env
+      SERVICE_NAME: search-service
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-iris}:${POSTGRES_PASSWORD:-iris}@postgres:5432/iris_search
+      SEARCH_BACKEND: elasticsearch
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      INGESTION_URL: http://ingestion-api:8000
+      ENABLE_SEMANTIC: ${ENABLE_SEMANTIC:-false}
+      CHROMA_URL: http://chromadb:8000
+    ports: ["127.0.0.1:8002:8000"]
+    depends_on: {postgres: *healthy, redis: *healthy, elasticsearch: *healthy}
+
+  search-worker:
+    build: *search-build
+    image: reg-iris/search-service:${IMAGE_TAG:-local}
+    command: ["worker"]
+    environment: *search-env
+    healthcheck: {disable: true}
+    depends_on: {search-api: *healthy}
+
+  # ─────────────────── Module 3: rules & impact analysis ──────────────────
+  rules-api:
+    build: &rules-build
+      context: .
+      dockerfile: services/rules-engine-service/Dockerfile
+    image: reg-iris/rules-engine-service:${IMAGE_TAG:-local}
+    command: ["api"]
+    environment: &rules-env
+      <<: *python-env
+      SERVICE_NAME: rules-engine-service
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-iris}:${POSTGRES_PASSWORD:-iris}@postgres:5432/iris_rules
+      STORAGE_DIR: /data/rules-engine
+      SEARCH_URL: http://search-api:8000
+      CHUNK_SIZE: ${RULES_CHUNK_SIZE:-5000}
+    volumes: [rulesdata:/data/rules-engine]
+    ports: ["127.0.0.1:8003:8000"]
+    depends_on: {postgres: *healthy, redis: *healthy}
+
+  rules-worker:
+    build: *rules-build
+    image: reg-iris/rules-engine-service:${IMAGE_TAG:-local}
+    command: ["worker"]
+    environment:
+      <<: *rules-env
+      WORKER_CONCURRENCY: ${RULES_WORKER_CONCURRENCY:-4}
+    volumes: [rulesdata:/data/rules-engine]
+    healthcheck: {disable: true}
+    depends_on: {rules-api: *healthy}
+
+  # ───────────────────────── frontend & gateway ───────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_TOKEN: ${API_TOKEN:-}
+    image: reg-iris/frontend:${IMAGE_TAG:-local}
+
+  gateway:
+    image: nginx:1.27-alpine
+    volumes: ["./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro"]
+    ports: ["8080:80"]
+    depends_on: [frontend, ingestion-api, search-api, rules-api]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/gateway-health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
+  redisdata:
+  esdata:
+  chromadata:
+  regulations:
+  rulesdata:

@@ -1,0 +1,11 @@
+# Each team owns its service; platform files need one reviewer from every team.
+/services/ingestion-service/      @reg-iris/team-ingestion
+/services/search-service/         @reg-iris/team-search
+/services/rules-engine-service/   @reg-iris/team-rules
+/frontend/                        @reg-iris/team-frontend
+/gateway/                         @reg-iris/team-frontend
+
+/libs/iris-common/                @reg-iris/team-ingestion @reg-iris/team-search @reg-iris/team-rules @reg-iris/team-frontend
+/docker-compose.yml               @reg-iris/team-ingestion @reg-iris/team-search @reg-iris/team-rules @reg-iris/team-frontend
+/.github/                         @reg-iris/team-frontend
+/docs/                            @reg-iris/team-ingestion @reg-iris/team-search @reg-iris/team-rules @reg-iris/team-frontend

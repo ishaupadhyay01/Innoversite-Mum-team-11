@@ -1,0 +1,10 @@
+[project]
+name = "ingestion-service"
+version = "0.1.0"
+description = "Reg IRIS Module 1 — regulatory document ingestion & version management"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["integration: needs real Postgres/Redis (run in CI integration job)"]

@@ -1,0 +1,45 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "analysis": {
+      "analyzer": {
+        "reg_text": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase", "asciifolding", "english_possessive", "english_stop", "english_stemmer"]
+        }
+      },
+      "filter": {
+        "english_possessive": {"type": "stemmer", "language": "possessive_english"},
+        "english_stop": {"type": "stop", "stopwords": "_english_"},
+        "english_stemmer": {"type": "stemmer", "language": "english"}
+      }
+    }
+  },
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "clause_id": {"type": "keyword"},
+      "document_id": {"type": "keyword"},
+      "version_id": {"type": "keyword"},
+      "document_title": {"type": "text", "analyzer": "reg_text", "fields": {"raw": {"type": "keyword"}}},
+      "file_name": {"type": "keyword"},
+      "mime_type": {"type": "keyword"},
+      "regulator": {"type": "keyword"},
+      "regulator_canonical": {"type": "keyword"},
+      "jurisdiction": {"type": "keyword"},
+      "category": {"type": "keyword"},
+      "version_label": {"type": "keyword"},
+      "status": {"type": "keyword"},
+      "effective_date": {"type": "date", "format": "strict_date"},
+      "clause_ref": {"type": "keyword", "fields": {"text": {"type": "text"}}},
+      "clause_title": {"type": "text", "analyzer": "reg_text"},
+      "text": {"type": "text", "analyzer": "reg_text", "term_vector": "with_positions_offsets"},
+      "page_start": {"type": "integer"},
+      "page_end": {"type": "integer"},
+      "anchor": {"type": "keyword", "index": false},
+      "ordinal": {"type": "integer"}
+    }
+  }
+}

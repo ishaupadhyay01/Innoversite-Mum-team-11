@@ -1,0 +1,15 @@
+# Repository-wide Python tooling config (each service also has its own pyproject for pytest).
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["**/migrations/versions/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "BLE", "SIM", "RUF"]
+ignore = ["E501", "UP038", "RUF007", "SIM103", "B008", "RUF001", "RUF002", "RUF003", "SIM108", "E731", "RUF012"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "iris_common", "tests"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/*" = ["E402", "B011"]
