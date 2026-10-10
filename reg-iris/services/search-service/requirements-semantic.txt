@@ -1,3 +1,0 @@
-# Optional semantic search (installed when the image is built with --build-arg WITH_SEMANTIC=true)
-chromadb-client==0.5.23
-sentence-transformers==3.3.1
