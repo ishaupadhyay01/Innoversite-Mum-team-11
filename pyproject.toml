@@ -1,0 +1,20 @@
+# Repository-wide tool configuration (each service has its own requirements.txt).
+[tool.ruff]
+line-length = 140
+target-version = "py311"
+extend-exclude = ["frontend", "data"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "BLE", "UP", "SIM", "C4", "RUF"]
+ignore = [
+  "B008",   # FastAPI dependency defaults (Depends/Query/File) are idiomatic
+  "RUF001", "RUF002", "RUF003",  # regulatory text legitimately uses typographic dashes/quotes
+  "SIM108",
+  "E501",   # long string literals in tests and messages
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "iris_shared"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"

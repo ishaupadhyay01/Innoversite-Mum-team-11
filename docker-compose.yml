@@ -1,0 +1,151 @@
+name: reg-iris
+
+x-python-env: &python-env
+  DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-regiris}:${POSTGRES_PASSWORD:-regiris-dev-password}@postgres:5432/${POSTGRES_DB:-regiris}
+  ELASTICSEARCH_URL: http://elasticsearch:9200
+  INTERNAL_TOKEN: ${INTERNAL_TOKEN:-dev-internal-token-change-me}
+  API_TOKEN: ${API_TOKEN:-}
+  INGESTION_URL: http://ingestion:8001
+  SEARCH_URL: http://search:8002
+  RULES_URL: http://rules:8003
+  DATASET_DIR: /data/dataset
+  UPLOAD_DIR: /data/uploads
+  CONFIG_DIR: /config
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+  MAX_UPLOAD_MB: ${MAX_UPLOAD_MB:-25}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-regiris}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-regiris-dev-password}
+      POSTGRES_DB: ${POSTGRES_DB:-regiris}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-regiris} -d ${POSTGRES_DB:-regiris}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      xpack.ml.enabled: "false"
+      xpack.watcher.enabled: "false"
+      cluster.routing.allocation.disk.threshold_enabled: "false"
+      ingest.geoip.downloader.enabled: "false"
+      ES_JAVA_OPTS: ${ES_JAVA_OPTS:--Xms512m -Xmx512m}
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    ports:
+      - "127.0.0.1:9200:9200"
+    mem_limit: 1536m
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=2s' >/dev/null"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+
+  migrate:
+    build:
+      context: .
+      dockerfile: services/ingestion-service/Dockerfile
+    image: reg-iris/ingestion:local
+    command: ["alembic", "-c", "/shared/iris_shared/migrations/alembic.ini", "upgrade", "head"]
+    environment: *python-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    healthcheck:
+      disable: true
+
+  search:
+    build:
+      context: .
+      dockerfile: services/search-service/Dockerfile
+    image: reg-iris/search:local
+    environment:
+      <<: *python-env
+      SERVICE_NAME: search
+    volumes:
+      - ./config:/config:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      elasticsearch:
+        condition: service_healthy
+
+  ingestion:
+    image: reg-iris/ingestion:local
+    build:
+      context: .
+      dockerfile: services/ingestion-service/Dockerfile
+    environment:
+      <<: *python-env
+      SERVICE_NAME: ingestion
+      SEED_ON_STARTUP: "true"
+    volumes:
+      - ./data:/data/dataset:ro
+      - ./config:/config:ro
+      - uploads:/data/uploads
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      search:
+        condition: service_started
+
+  rules:
+    build:
+      context: .
+      dockerfile: services/rules-service/Dockerfile
+    image: reg-iris/rules:local
+    environment:
+      <<: *python-env
+      SERVICE_NAME: rules
+    volumes:
+      - ./data:/data/dataset:ro
+      - ./config:/config:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    image: reg-iris/gateway:local
+    environment:
+      <<: *python-env
+      SERVICE_NAME: gateway
+      CORS_ORIGINS: http://localhost:${FRONTEND_PORT:-3000},http://localhost:5173
+    ports:
+      - "${GATEWAY_PORT:-8000}:8000"
+    depends_on:
+      ingestion:
+        condition: service_healthy
+      search:
+        condition: service_healthy
+      rules:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+    image: reg-iris/frontend:local
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      gateway:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  esdata:
+  uploads:
