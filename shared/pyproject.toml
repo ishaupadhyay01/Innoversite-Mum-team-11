@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iris-shared"
+version = "1.0.0"
+description = "Shared database models, configuration and utilities for the Reg IRIS services"
+requires-python = ">=3.11"
+dependencies = [
+  "SQLAlchemy==2.0.36",
+  "psycopg[binary]==3.2.3",
+  "alembic==1.14.0",
+  "pydantic==2.10.3",
+  "pydantic-settings==2.6.1",
+  "fastapi==0.115.5",
+  "httpx==0.28.1",
+]
+
+[tool.setuptools.packages.find]
+include = ["iris_shared*"]
+
+[tool.setuptools.package-data]
+"iris_shared" = ["migrations/alembic.ini", "migrations/script.py.mako", "migrations/env.py", "migrations/versions/*.py"]
