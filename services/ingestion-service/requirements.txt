@@ -1,0 +1,11 @@
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+SQLAlchemy==2.0.36
+psycopg[binary]==3.2.3
+alembic==1.14.0
+httpx==0.28.1
+python-multipart==0.0.19
+PyMuPDF==1.24.14
+beautifulsoup4==4.12.3
