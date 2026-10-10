@@ -1,0 +1,46 @@
+# Words removed from the free-text part of a search query before BM25 matching.
+# They are common in natural-language questions ("Give me the paragraph that
+# defines ...") but carry no regulatory meaning. Quoted phrases are never altered.
+a
+about
+all
+an
+and
+any
+are
+can
+define
+defines
+did
+do
+does
+find
+for
+give
+how
+i
+in
+is
+it
+list
+me
+mention
+mentions
+of
+on
+paragraph
+paragraphs
+please
+show
+tell
+that
+the
+to
+under
+what
+when
+where
+which
+who
+why
+with

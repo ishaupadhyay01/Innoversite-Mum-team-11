@@ -1,0 +1,26 @@
+SYNTHETIC DEMONSTRATION DOCUMENT - NOT A REAL REGULATION
+Created for the Reg IRIS upload demo. Paragraph 5 is deliberately altered and Paragraph 8 is invented, so the version comparison has something to detect. Do not cite this file.
+
+Paragraph 1. Scope and Objective
+The Markets in Financial Instruments Directive (MiFID II) establishes a harmonised regulatory framework for investment services across the European Union. Its primary objective is to increase transparency, improve investor protection and ensure the integrity of EU financial markets.
+
+Paragraph 2. Mandatory Trade Reporting Fields
+All investment firms shall report, for each trade, the following fields without omission: Trade_ID, Asset_Class, Execution_Timestamp, Counterparty_LEI, Price, Quantity, Currency, and, where applicable, Execution_Venue. The data must be transmitted to the relevant national competent authority (NCA) within the time limits stipulated in Article 25.
+
+Paragraph 3. Counterparty LEI Requirement
+The Counterparty_LEI must be a valid 20-character alphanumeric identifier issued by an accredited Local Operating Unit (LOU) in accordance with the Global Legal Entity Identifier System (GLEIF). A LEI that fails the GLEIF checksum test shall be rejected by the reporting system.
+
+Paragraph 4. Derivative-Specific Obligations
+For derivative contracts (including options, futures, swaps and structured products), the Maturity_Date field is mandatory and must be a valid ISO-8601 date (YYYY-MM-DD). In addition, the Underlying_ISIN is required for all derivatives that are not cash-settled.
+
+Paragraph 5. Timing of Reporting
+Transactions executed on or after 1 January 2023 shall be reported on a real-time basis (within 10 minutes of execution). Trades executed before that date may be reported on a delayed (end-of-day) basis, but must be flagged as “historical”.
+
+Paragraph 6. Data Quality and Validation
+Each reporting submission shall undergo automated validation against the MiFID II reporting schema. Errors identified at validation time must be corrected and re-submitted within 24 hours, otherwise the reporting firm will be subject to supervisory penalties.
+
+Paragraph 7. New Clause – Execution Venue Disclosure (v2.0)
+Effective 1 July 2023, all trades executed on multilateral trading facilities (MTFs) or systematic internalisers (SIs) must include the field `Execution_Venue` indicating the market identifier code (MIC) of the venue. Failure to provide a valid MIC will result in a breach notice under Article 28.
+
+Paragraph 8. Synthetic Demo Clause - Reporting Contact (v3.0)
+Each reporting firm must nominate a reporting contact and record the contact's Legal Entity Identifier alongside the Counterparty_LEI in its internal register. This clause exists only in the synthetic demo file.

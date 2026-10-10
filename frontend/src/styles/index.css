@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens (RGB triplets so Tailwind can apply alpha). */
+:root {
+  --canvas: 245 247 250;      /* cool paper */
+  --surface: 255 255 255;
+  --sunken: 237 241 246;
+  --line: 222 228 236;
+  --ink: 15 23 42;
+  --muted: 71 85 105;          /* slate */
+  --faint: 120 134 156;
+  --navy: 14 26 43;            /* sidebar / brand */
+  --navy-soft: 27 43 66;
+  --accent: 15 124 128;        /* teal: actions, focus */
+  --accent-soft: 223 242 241;
+  --version: 67 56 202;        /* indigo: versions & diffs */
+  --version-soft: 234 233 252;
+  --pass: 21 128 61;
+  --pass-soft: 222 245 230;
+  --fail: 180 35 24;
+  --fail-soft: 253 232 230;
+  --warn: 181 71 8;
+  --warn-soft: 254 240 222;
+  --na: 100 116 139;
+  --na-soft: 236 240 245;
+  --mark: 255 228 140;
+  color-scheme: light;
+}
+
+.dark {
+  --canvas: 11 19 32;
+  --surface: 17 28 45;
+  --sunken: 23 36 56;
+  --line: 38 54 78;
+  --ink: 226 232 240;
+  --muted: 160 174 196;
+  --faint: 120 136 160;
+  --navy: 8 14 25;
+  --navy-soft: 22 34 54;
+  --accent: 64 196 192;
+  --accent-soft: 16 52 58;
+  --version: 150 142 255;
+  --version-soft: 38 36 82;
+  --pass: 74 210 130;
+  --pass-soft: 18 52 36;
+  --fail: 255 128 116;
+  --fail-soft: 70 26 26;
+  --warn: 251 176 92;
+  --warn-soft: 66 42 18;
+  --na: 148 163 184;
+  --na-soft: 32 44 62;
+  --mark: 120 96 20;
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-canvas font-sans text-[15px] text-ink antialiased;
+  font-feature-settings: "tnum" 1;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--accent));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+mark,
+.hl {
+  background: rgb(var(--mark));
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.reg-text {
+  @apply font-serif text-[15.5px] leading-[1.7] text-ink;
+  max-width: 72ch;
+}
+
+.skeleton {
+  @apply animate-pulse rounded bg-sunken;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Thin scrollbars inside panels */
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: rgb(var(--line));
+  border-radius: 8px;
+}

@@ -1,0 +1,12 @@
+{
+  "description": "Declarative, reviewed additions to the supplied rule files. The source rule JSON is never modified; every entry here is shown next to the affected rule in the API and UI. Entries are data, not code.",
+  "field_aliases": {
+    "Execution_Timestamp": "Timestamp"
+  },
+  "rules": {
+    "EMIR-1": {
+      "applies_when": { "==": [ { "var": "Asset_Class" }, "Derivative" ] },
+      "rationale": "The rule description reads 'All derivatives must include a non-null Underlying_ISIN'. The supplied logic places the Derivative test inside an AND, which on its own would mark every Equity, Bond, FX and Commodity trade as non-compliant. Applicability is declared explicitly; for derivatives the original logic is evaluated unchanged."
+    }
+  }
+}

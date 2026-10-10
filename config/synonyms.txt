@@ -1,0 +1,18 @@
+# Query-time synonyms for regulatory keyword search (Solr synonym format).
+# Applied ONLY to the content.syn / section_heading.syn subfields at search time.
+# Exact-phrase searches ("...") never use synonyms, so they keep their literal meaning.
+# Changing this file requires recreating the index: docker compose down -v && docker compose up --build
+lei, legal entity identifier
+fx, foreign exchange
+mifid, mifid ii
+isin, international securities identification number
+mic, market identifier code
+otc, over the counter
+nca, national competent authority
+emir, european market infrastructure regulation
+esma, european securities and markets authority
+fca, financial conduct authority
+cftc, commodity futures trading commission
+tin, taxpayer identification number
+eod, end of day
+mtf, multilateral trading facility
